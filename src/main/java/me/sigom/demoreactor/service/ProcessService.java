@@ -40,10 +40,7 @@ public class ProcessService implements UseCaseProcess{
                 .body(Mono.just(request.getMessage()), String.class)
                 .retrieve()
                 .bodyToMono(TransmissionStatus.class)
-                .doOnSuccess(this::save)
-                .doOnError(Exception.class, ( Exception error ) -> {
-                    System.out.println( "error : "+ error );
-                });
+                .flatMap(this::save);
     }
 
     @Override
@@ -62,20 +59,17 @@ public class ProcessService implements UseCaseProcess{
     }
 
     @Override
-    public Mono<String> save(TransmissionStatus dto) {
+    public Mono<TransmissionStatus> save(TransmissionStatus dto) {
         Event event = new Event(dto.getAggregateId(), dto.getEventType(), dto.getAggregateType(), dto.getVersion());
-        Mono<Event> mEvent = createEvent(event);
-        Mono<Snapshot> mSnapshot = createSnapshot(event);
-        mEvent.subscribe(s -> log.info("COMPLETED SAVE"), (e) -> System.out.println("ITEM NOT FOUND " + e.getMessage()));
-        mSnapshot.subscribe();
-        return Mono.just(event.getAggregateId());
+        return createEvent(event)
+                .flatMap(e -> createSnapshot(event))
+                .flatMap(s -> Mono.just(dto));
     }
     public Mono<Event> createEvent(Event event) {
         return eventRepository.save(event);
     }
 
     private Mono<Snapshot> createSnapshot(Event event) {
-        log.info("PERSISTING SNAPSHOT >>>>>");
         Snapshot snapshot = new Snapshot(event.getAggregateId(), event.getAggregateType(), event.getVersion());
         Mono<Boolean> existSnapshot = findByAggregateId(snapshot.getAggregateId()).hasElement();
         return existSnapshot.flatMap(exist -> exist ? Mono.error(new Exception("Snapshot already in use"))

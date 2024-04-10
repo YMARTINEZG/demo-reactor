@@ -31,10 +31,9 @@ public class ProcessController {
         return e.map(t ->
         {
             if (t.getStatus().equals("200")) {
-                //TODO with TransmissionStatus.getMessage() get id from ProcessContext and include into ResponseBody
-                return new ResponseEntity<>(request.getId(), HttpStatus.OK);
+                return new ResponseEntity<>(t.getAggregateId(), HttpStatus.OK);
             } else {
-                return new ResponseEntity<>(request.getId(), HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(t.getAggregateId(), HttpStatus.BAD_REQUEST);
             }
         });
     }

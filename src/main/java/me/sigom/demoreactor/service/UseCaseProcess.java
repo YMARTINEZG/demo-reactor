@@ -17,7 +17,7 @@ public interface UseCaseProcess {
 
     Flux<Event> findAllAggregates();
 
-    Mono<String> save(TransmissionStatus dto);
+    Mono<TransmissionStatus> save(TransmissionStatus dto);
 
 
 }
